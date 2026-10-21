@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "361456245504",
+    "project_id": "atolye-panosu-12e4e",
+    "storage_bucket": "atolye-panosu-12e4e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:361456245504:android:9fd6806c8446cb2878b1e5",
+        "android_client_info": {
+          "package_name": "tr.atolyepanosu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOJOFb7yr-F-oL203X2oInbczZMWmWSfY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
