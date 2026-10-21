@@ -53,6 +53,15 @@ const service = pick((k) => k.name === 'service_role', (k) => k.type === 'secret
 if (!anon || !service) die('Supabase API anahtarları okunamadı.');
 mask(service);
 
+// Uygulama derlemesi için yalnızca adres ve herkese açık anahtar gerekir: aynı iş içinde ortam değişkeni olarak ver.
+if (process.argv.includes('--keys-only')) {
+  const [o, r] = (process.env.GITHUB_REPOSITORY || 'atolye/atolye-panosu').split('/');
+  const lines = `SUPABASE_URL=https://${ref}.supabase.co\nSUPABASE_ANON_KEY=${anon}\nPAGES_URL=https://${o.toLowerCase()}.github.io/${r}/\n`;
+  if (process.env.GITHUB_ENV) fs.appendFileSync(process.env.GITHUB_ENV, lines);
+  console.log(`Sunucu adresi: https://${ref}.supabase.co`);
+  process.exit(0);
+}
+
 // 3) Veritabanı
 const sql = (query) => api('POST', `/projects/${ref}/database/query`, { query });
 await sql('create table if not exists public._migrations (name text primary key, applied_at timestamptz not null default now()); revoke all on public._migrations from anon, authenticated;');
@@ -115,7 +124,6 @@ await api('PATCH', `/projects/${ref}/config/auth`, {
 });
 
 out('supabase_url', url);
-out('supabase_anon', anon);
 out('project_ref', ref);
 out('pages_url', pagesUrl);
 console.log('Sunucu hazır.');
