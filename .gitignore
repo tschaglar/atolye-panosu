@@ -1,0 +1,6 @@
+node_modules/
+www/
+site/
+test/www-fake/
+.DS_Store
+*.log

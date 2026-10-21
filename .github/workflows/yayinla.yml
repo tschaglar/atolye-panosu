@@ -1,0 +1,109 @@
+name: Yayınla
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: yayinla
+  cancel-in-progress: false
+
+jobs:
+  sunucu:
+    name: Sunucuyu kur (Supabase)
+    runs-on: ubuntu-latest
+    outputs:
+      supabase_url: ${{ steps.kur.outputs.supabase_url }}
+      supabase_anon: ${{ steps.kur.outputs.supabase_anon }}
+      pages_url: ${{ steps.kur.outputs.pages_url }}
+      project_ref: ${{ steps.kur.outputs.project_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Veritabanı ve ayarlar
+        id: kur
+        run: node scripts/setup-backend.mjs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Sunucu fonksiyonları
+        run: supabase functions deploy tick admin --project-ref "${{ steps.kur.outputs.project_ref }}" --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  uygulama:
+    name: Uygulamayı derle (web + APK)
+    needs: sunucu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gizli anahtar kontrolü
+        run: |
+          if [ -z "$KS" ]; then echo "::error::GitHub'da ANDROID_KEYSTORE_PASSWORD adlı secret yok. Claude'un verdiği değeri ekle."; exit 1; fi
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      - name: Web sürümünü derle
+        run: npm run build
+        env:
+          SUPABASE_URL: ${{ needs.sunucu.outputs.supabase_url }}
+          SUPABASE_ANON_KEY: ${{ needs.sunucu.outputs.supabase_anon }}
+          PAGES_URL: ${{ needs.sunucu.outputs.pages_url }}
+          APP_VERSION: ${{ github.run_number }}
+          HAS_FCM: ${{ hashFiles('android/app/google-services.json') != '' && '1' || '0' }}
+      - name: Android projesine aktar
+        run: npx cap sync android
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: APK derle
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon --stacktrace
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          APP_VERSION: ${{ github.run_number }}
+      - name: Yayın klasörü
+        run: |
+          mkdir -p site
+          cp -r www/. site/
+          cp android/app/build/outputs/apk/release/app-release.apk site/atolye-panosu.apk
+          printf '{"version": %s, "apk": "%satolye-panosu.apk"}\n' "${{ github.run_number }}" "${{ needs.sunucu.outputs.pages_url }}" > site/version.json
+          touch site/.nojekyll
+          ls -la site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atolye-panosu-apk
+          path: site/atolye-panosu.apk
+          retention-days: 30
+
+  yayin:
+    name: Siteye yayınla (GitHub Pages)
+    needs: uygulama
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4

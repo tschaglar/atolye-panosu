@@ -1,0 +1,7 @@
+project_id = "atolye-panosu"
+
+[functions.tick]
+verify_jwt = false
+
+[functions.admin]
+verify_jwt = false

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Atölye Panosu</string>
+    <string name="title_activity_main">Atölye Panosu</string>
+    <string name="package_name">tr.atolyepanosu.app</string>
+    <string name="custom_url_scheme">tr.atolyepanosu.app</string>
+</resources>

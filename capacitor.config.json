@@ -1,0 +1,9 @@
+{
+  "appId": "tr.atolyepanosu.app",
+  "appName": "Atölye Panosu",
+  "webDir": "www",
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+  }
+}
