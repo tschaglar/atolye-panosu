@@ -17,7 +17,7 @@ concurrency:
 jobs:
   sunucu:
     name: Sunucuyu kur (Supabase)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       supabase_url: ${{ steps.kur.outputs.supabase_url }}
       supabase_anon: ${{ steps.kur.outputs.supabase_anon }}
@@ -46,7 +46,7 @@ jobs:
   uygulama:
     name: Uygulamayı derle (web + APK)
     needs: sunucu
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -100,7 +100,7 @@ jobs:
   yayin:
     name: Siteye yayınla (GitHub Pages)
     needs: uygulama
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.pages.outputs.page_url }}
